@@ -3,7 +3,7 @@ name = "pipeline-triage-agent"
 version = "0.1.0"
 description = "Advisory AI agent that triages failed data-pipeline runs (synthetic data only)"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["mcp>=2.3,<3", "pydantic>=2"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
