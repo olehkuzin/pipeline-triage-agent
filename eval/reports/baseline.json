@@ -1,0 +1,99 @@
+{
+  "n": 120,
+  "accuracy": 0.9,
+  "macro_f1": 0.8774509803921569,
+  "per_class": {
+    "bad_deploy": {
+      "precision": 0.6666666666666666,
+      "recall": 0.15384615384615385,
+      "f1": 0.25,
+      "support": 13
+    },
+    "data_quality_violation": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 13
+    },
+    "late_or_missing_data": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 14
+    },
+    "permission_or_auth": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 14
+    },
+    "resource_exhaustion": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 14
+    },
+    "schema_drift": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 14
+    },
+    "transient_infra": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 13
+    },
+    "unknown": {
+      "precision": 0.5,
+      "recall": 0.9166666666666666,
+      "f1": 0.6470588235294118,
+      "support": 12
+    },
+    "upstream_dependency_failure": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 13
+    }
+  },
+  "confusion": {
+    "bad_deploy": {
+      "unknown": 11,
+      "bad_deploy": 2
+    },
+    "data_quality_violation": {
+      "data_quality_violation": 13
+    },
+    "late_or_missing_data": {
+      "late_or_missing_data": 14
+    },
+    "permission_or_auth": {
+      "permission_or_auth": 14
+    },
+    "resource_exhaustion": {
+      "resource_exhaustion": 14
+    },
+    "schema_drift": {
+      "schema_drift": 14
+    },
+    "transient_infra": {
+      "transient_infra": 13
+    },
+    "unknown": {
+      "unknown": 11,
+      "bad_deploy": 1
+    },
+    "upstream_dependency_failure": {
+      "upstream_dependency_failure": 13
+    }
+  },
+  "calibration": {
+    "0.8+": 1.0,
+    "0.6-0.8": 0.9411764705882353,
+    "0.4-0.6": 1.0,
+    "<0.4": 0.0
+  },
+  "ambiguous_resolved": 0
+}
