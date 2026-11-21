@@ -1,0 +1,522 @@
+{
+  "n": 27,
+  "accuracy": 0.8518518518518519,
+  "macro_f1": 0.8476190476190477,
+  "per_class": {
+    "bad_deploy": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "data_quality_violation": {
+      "precision": 1.0,
+      "recall": 0.6666666666666666,
+      "f1": 0.8,
+      "support": 3
+    },
+    "late_or_missing_data": {
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1": 0.8571428571428571,
+      "support": 3
+    },
+    "permission_or_auth": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "resource_exhaustion": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "schema_drift": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    },
+    "transient_infra": {
+      "precision": 0.5,
+      "recall": 0.6666666666666666,
+      "f1": 0.5714285714285715,
+      "support": 3
+    },
+    "unknown": {
+      "precision": 0.5,
+      "recall": 0.3333333333333333,
+      "f1": 0.4,
+      "support": 3
+    },
+    "upstream_dependency_failure": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 3
+    }
+  },
+  "confusion": {
+    "bad_deploy": {
+      "schema_drift": 2,
+      "bad_deploy": 1
+    },
+    "data_quality_violation": {
+      "late_or_missing_data": 1,
+      "data_quality_violation": 2
+    },
+    "late_or_missing_data": {
+      "late_or_missing_data": 3
+    },
+    "permission_or_auth": {
+      "permission_or_auth": 3
+    },
+    "resource_exhaustion": {
+      "resource_exhaustion": 3
+    },
+    "schema_drift": {
+      "schema_drift": 3
+    },
+    "transient_infra": {
+      "unknown": 1,
+      "transient_infra": 2
+    },
+    "unknown": {
+      "transient_infra": 2,
+      "unknown": 1
+    },
+    "upstream_dependency_failure": {
+      "upstream_dependency_failure": 3
+    }
+  },
+  "calibration": {
+    "0.8+": 1.0,
+    "0.6-0.8": 0.4,
+    "0.4-0.6": 1.0,
+    "<0.4": 0.0
+  },
+  "ambiguous_resolved": 2,
+  "operational": {
+    "tool_calls": 5.592592592592593,
+    "prompt_tokens": 13296.444444444445,
+    "completion_tokens": 2597.5925925925926,
+    "wall_time_s": 51.23444444444444,
+    "fallback_rate": 0.037037037037037035
+  },
+  "predictions": [
+    {
+      "run_id": "run_00099",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 5,
+      "prompt_tokens": 10415,
+      "completion_tokens": 1901,
+      "wall_time_s": 34.41,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00112",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.72,
+      "correct": false,
+      "tool_calls": 5,
+      "prompt_tokens": 11246,
+      "completion_tokens": 3886,
+      "wall_time_s": 67.31,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00057",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 7,
+      "prompt_tokens": 15788,
+      "completion_tokens": 2727,
+      "wall_time_s": 33.36,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00085",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.92,
+      "correct": true,
+      "tool_calls": 5,
+      "prompt_tokens": 9418,
+      "completion_tokens": 1898,
+      "wall_time_s": 65.74,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00071",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.9,
+      "correct": true,
+      "tool_calls": 6,
+      "prompt_tokens": 18557,
+      "completion_tokens": 3308,
+      "wall_time_s": 52.71,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00043",
+      "truth": "schema_drift",
+      "accepted": [
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 4,
+      "prompt_tokens": 13447,
+      "completion_tokens": 2473,
+      "wall_time_s": 61.86,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00138",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "unknown",
+      "confidence": 0.0,
+      "correct": false,
+      "tool_calls": 11,
+      "prompt_tokens": 28580,
+      "completion_tokens": 4770,
+      "wall_time_s": 82.43,
+      "fallback": true
+    },
+    {
+      "run_id": "run_00151",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.6,
+      "correct": false,
+      "tool_calls": 8,
+      "prompt_tokens": 20306,
+      "completion_tokens": 3914,
+      "wall_time_s": 93.27,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00125",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 3,
+      "prompt_tokens": 7204,
+      "completion_tokens": 1809,
+      "wall_time_s": 19.09,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00100",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 6,
+      "prompt_tokens": 15080,
+      "completion_tokens": 2733,
+      "wall_time_s": 29.85,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00113",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 5,
+      "prompt_tokens": 11167,
+      "completion_tokens": 1599,
+      "wall_time_s": 35.34,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00058",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.92,
+      "correct": true,
+      "tool_calls": 3,
+      "prompt_tokens": 6833,
+      "completion_tokens": 2779,
+      "wall_time_s": 74.91,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00086",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 4,
+      "prompt_tokens": 9682,
+      "completion_tokens": 1573,
+      "wall_time_s": 43.14,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00072",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 5,
+      "prompt_tokens": 15121,
+      "completion_tokens": 2220,
+      "wall_time_s": 28.1,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00044",
+      "truth": "schema_drift",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 4,
+      "prompt_tokens": 11149,
+      "completion_tokens": 2034,
+      "wall_time_s": 34.34,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00139",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.7,
+      "correct": true,
+      "tool_calls": 8,
+      "prompt_tokens": 14649,
+      "completion_tokens": 2748,
+      "wall_time_s": 48.62,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00152",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.6,
+      "correct": false,
+      "tool_calls": 7,
+      "prompt_tokens": 14588,
+      "completion_tokens": 2795,
+      "wall_time_s": 49.99,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00126",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 3,
+      "prompt_tokens": 6831,
+      "completion_tokens": 2107,
+      "wall_time_s": 22.23,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00101",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "bad_deploy",
+      "confidence": 0.9,
+      "correct": true,
+      "tool_calls": 6,
+      "prompt_tokens": 11410,
+      "completion_tokens": 2770,
+      "wall_time_s": 28.83,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00114",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 5,
+      "prompt_tokens": 11181,
+      "completion_tokens": 3314,
+      "wall_time_s": 94.53,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00059",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 5,
+      "prompt_tokens": 17130,
+      "completion_tokens": 3081,
+      "wall_time_s": 71.65,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00087",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 4,
+      "prompt_tokens": 11554,
+      "completion_tokens": 1682,
+      "wall_time_s": 45.32,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00073",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.92,
+      "correct": true,
+      "tool_calls": 6,
+      "prompt_tokens": 12713,
+      "completion_tokens": 1518,
+      "wall_time_s": 42.16,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00045",
+      "truth": "schema_drift",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 4,
+      "prompt_tokens": 10285,
+      "completion_tokens": 1740,
+      "wall_time_s": 17.18,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00140",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.7,
+      "correct": true,
+      "tool_calls": 9,
+      "prompt_tokens": 16408,
+      "completion_tokens": 3469,
+      "wall_time_s": 55.67,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00153",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "unknown",
+      "confidence": 0.5,
+      "correct": true,
+      "tool_calls": 10,
+      "prompt_tokens": 21187,
+      "completion_tokens": 3615,
+      "wall_time_s": 114.55,
+      "fallback": false
+    },
+    {
+      "run_id": "run_00127",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.95,
+      "correct": true,
+      "tool_calls": 3,
+      "prompt_tokens": 7075,
+      "completion_tokens": 1672,
+      "wall_time_s": 36.74,
+      "fallback": false
+    }
+  ]
+}

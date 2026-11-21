@@ -5,7 +5,8 @@ Skipped unless MISTRAL_API_KEY is set:
     MISTRAL_API_KEY=... .venv/bin/python -m pytest tests/test_agent_live.py -s -q
 
 Uses a small generated dataset and triages a handful of runs end-to-end
-(real chat completions, real tool-calling, validated structured output).
+(real chat completions, real tool-calling through the MCP server over stdio,
+validated structured output).
 """
 
 import os
@@ -23,18 +24,29 @@ pytestmark = pytest.mark.skipif(
 MODEL = os.environ.get("TRIAGE_AGENT_MODEL", "mistral-large-latest")
 
 
+N, SEED = 80, 13
+
+
+@pytest.fixture(scope="module")
+def env():
+    return Environment.generate(n=N, seed=SEED)
+
+
 @pytest.fixture(scope="module")
 def agent():
     from agent.llm import MistralLLM
     from agent.loop import TriageAgent
+    from agent.tools import MCPToolClient
 
-    env = Environment.generate(n=80, seed=13)
-    return TriageAgent(env, MistralLLM(model=MODEL))
+    with MCPToolClient.stdio(n=N, seed=SEED) as tools:  # the server builds the same seeded dataset
+        yield TriageAgent(MistralLLM(model=MODEL), tools)
 
 
-def test_live_single_incident(agent):
-    run = next(r for r in agent.env.all_runs() if r.root_cause == RootCause.SCHEMA_DRIFT)
-    d = agent.diagnose(run.run_id)
+def test_live_single_incident(env, agent):
+    from agent.schemas import Incident
+
+    run = next(r for r in env.all_runs() if r.root_cause == RootCause.SCHEMA_DRIFT and not r.ambiguous)
+    d = agent.diagnose(Incident.from_run(run))
     print(f"root_cause={d.root_cause} conf={d.confidence}")
     print("evidence[0]:", d.evidence[0].quote[:80])
     print("next_step:", d.proposed_next_step[:100])
@@ -45,16 +57,23 @@ def test_live_single_incident(agent):
     assert 0.3 <= d.confidence <= 1.0
 
 
-def test_live_small_sample(agent):
+def test_live_small_sample(env, agent):
     """A few runs across causes; accuracy sanity check (not a strict eval)."""
     import random
 
-    runs = random.Random(3).sample(agent.env.all_runs(), 5)
-    correct = 0
+    from agent.schemas import Incident
+
+    runs = random.Random(3).sample(env.all_runs(), 5)
+    correct = fallbacks = 0
     for run in runs:
-        d = agent.diagnose(run.run_id)
+        d = agent.diagnose(Incident.from_run(run))
+        tr = agent.last_trace
+        fallbacks += tr.fallback_reason is not None
+        for reason in tr.rejections:
+            print(f"  {run.run_id} rejected answer: {reason[:160]}")
         accepted = {run.root_cause.value} | {a.value for a in run.accepted_causes}
         ok = d.root_cause.value in accepted
         correct += ok
         print(f"{run.run_id}: truth={run.root_cause.value:<30} pred={d.root_cause.value:<30} ok={ok}")
     assert correct >= 3  # expect most to be right on synthetic signals
+    assert fallbacks <= 1  # the repair loop should rescue nearly every malformed answer

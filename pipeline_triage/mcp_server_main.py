@@ -1,7 +1,7 @@
 """Run the triage MCP server over stdio.
 
 Usage:
-  python -m pipeline_triage.mcp_server [--dataset runs.jsonl] [--n 120] [--seed 42]
+  python -m pipeline_triage.mcp_server_main [--dataset runs.jsonl] [--n 120] [--seed 42]
 
 Without --dataset, a dataset is generated in-memory (seeded).
 """
@@ -11,10 +11,8 @@ from __future__ import annotations
 import argparse
 import sys
 
-from pydantic import ValidationError
-
 from .env import Environment
-from .mcp_server import ToolError, create_server
+from .mcp_server import create_server
 
 
 def main(argv: list[str] | None = None) -> int:

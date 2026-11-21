@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass, field
 
 from ..env import Environment
-from ..mcp_server import get_recent_changes, get_run_history, get_run_logs, get_table_schema, ToolError
+from ..mcp_server import ToolError, get_recent_changes, get_run_logs, get_table_schema
 
 
 @dataclass
@@ -35,10 +35,10 @@ LOG_RULES: list[tuple[str, re.Pattern[str], str, float]] = [
      "late_or_missing_data", 0.85),
     ("oom_disk", re.compile(r"OutOfMemoryError|No space left on device|exit code 137|ExecutorLostFailure", re.I),
      "resource_exhaustion", 0.85),
-    ("auth", re.compile(r"403|AccessDenied|ExpiredToken|security token .* expired|Login failed|Kerberos ticket expired|not authorized", re.I),
+    ("auth", re.compile(r"\b403\b|AccessDenied|ExpiredToken|security token .* expired|Login failed|Kerberos ticket expired|not authorized", re.I),
      "permission_or_auth", 0.85),
     ("schema_col_missing", re.compile(r"Column '.*' not found in source table|Did you mean|Cannot cast column", re.I),
-     "schema_drift", 0.7),  # could also be bad_deploy; schema check disambiguates below
+     "schema_drift", 0.7),  # could also be bad_deploy; first match wins, so no disambiguation here
     ("retry_succeeded", re.compile(r"succeeded after retry", re.I),
      "transient_infra", 0.8),
     ("net_retry", re.compile(r"ConnectionResetError|Read timeout .* retrying|server closed the connection unexpectedly", re.I),
@@ -53,8 +53,8 @@ RETRIES_ONLY = re.compile(r"Attempt \d+/\d+ exited with return code 1|All \d+ at
 
 def classify_run(env: Environment, run_id: str) -> Prediction:
     """Classify root cause from evidence only (logs + recent changes + schemas)."""
-    run = env.get_run(run_id)
-    assert run is not None
+    if env.get_run(run_id) is None:
+        raise ToolError(f"Run '{run_id}' not found.")
     logs = get_run_logs(env, run_id, tail_lines=200)
 
     matched: list[str] = []
@@ -62,7 +62,7 @@ def classify_run(env: Environment, run_id: str) -> Prediction:
     def schema_changed_for_log_tables() -> str | None:
         for table in TABLE_RE.findall(logs):
             try:
-                schema = json.loads(get_table_schema(env, table))
+                schema = json.loads(get_table_schema(env, run_id, table))
             except ToolError:
                 continue
             if schema.get("version", 0) > 1 and schema.get("changed_at"):
@@ -71,11 +71,10 @@ def classify_run(env: Environment, run_id: str) -> Prediction:
 
     def recent_deploy() -> bool:
         try:
-            changes = json.loads(get_recent_changes(env, run.pipeline, since_hours=48))
+            changes = json.loads(get_recent_changes(env, run_id, since_hours=48))["changes"]
         except ToolError:
             return False
-        recent = [c for c in changes if "typing" not in c.get("description", "").lower()
-                 and not c["description"].startswith(("Docs:", "Chore:", "Style:", "Test:"))]
+        recent = [c for c in changes if not c["description"].startswith(("Docs:", "Chore:", "Style:", "Test:"))]
         return bool(recent)
 
     # 1) Direct log-signal rules, cheapest and most specific first.
@@ -89,8 +88,7 @@ def classify_run(env: Environment, run_id: str) -> Prediction:
         matched.append("deploy_error_recent_change")
         return Prediction("bad_deploy", 0.75, matched)
 
-    # 3) Missing-column error without schema version bump, but with a recent
-    #    meaningful change => also plausibly bad_deploy (schema_drift was tried first).
+    # 3) A table mentioned in the logs had a schema version bump => schema_drift.
     if schema_changed_for_log_tables():
         matched.append("schema_version_bumped")
         return Prediction("schema_drift", 0.8, matched)
