@@ -1,15 +1,17 @@
-"""The triage agent: a tool-calling loop over the same tools the MCP server exposes.
+"""The triage agent: an LLM tool-calling loop over the read-only MCP server.
 
 Design:
-- The agent calls the same read-only tool implementations the MCP server serves
-  (single source of truth; the MCP stdio server is the production wiring).
-- Guardrails: hard tool-call budget per incident; evidence quotes must appear
-  verbatim in tool outputs; `requires_human_approval` is always True; no
-  execution of any fix.
+- Tools are reached only through an MCP client session (`MCPToolClient`); the
+  function-calling specs shown to the model come from the server's tool list.
+- Guardrails: hard tool-call budget per incident (when exhausted, the model must
+  answer with what it has); every evidence quote must appear verbatim in the
+  output of the tool it names; `requires_human_approval` is always True; no
+  tool can change anything.
 - Structured output: the final answer is validated against the Pydantic
-  Diagnosis model; invalid output earns a bounded number of repair turns,
-  and the agent falls back to `unknown` rather than guessing.
-- Tracing: every incident records tool calls, token usage, turns, wall time.
+  Diagnosis model; invalid output earns a bounded number of repair turns, and
+  the agent falls back to `unknown` rather than guessing.
+- Tracing: every incident records tool calls, token usage, turns, wall time and
+  why (if at all) it fell back.
 """
 
 from __future__ import annotations
@@ -17,101 +19,30 @@ from __future__ import annotations
 import json
 import re
 import time
-from dataclasses import dataclass, field
+from collections import defaultdict
+from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from pipeline_triage.env import Environment
-from pipeline_triage.mcp_server import ToolError, get_recent_changes, get_run_history, get_run_logs, get_table_schema
-
-from .llm import LLMResponse, MistralLLM
+from .llm import LLMClient
 from .prompts import SYSTEM_PROMPT, USER_TEMPLATE
-from .schemas import Diagnosis, EvidenceItem
+from .schemas import SOURCE_TOOL, Diagnosis, EvidenceItem, Incident
+from .tools import MCPToolClient
 
 MAX_TOOL_CALLS = 12
-MAX_TURNS = 8
+MAX_TURNS = 10
 MAX_REPAIR_ATTEMPTS = 2
 
-TOOL_IMPLS = {
-    "get_run_logs": get_run_logs,
-    "get_recent_changes": get_recent_changes,
-    "get_table_schema": get_table_schema,
-    "get_run_history": get_run_history,
-}
-
-TOOL_SPECS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_run_logs",
-            "description": "Get the logs of a pipeline run, including the failing task.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "run_id": {"type": "string", "description": "The run to inspect."},
-                    "tail_lines": {"type": "integer", "default": 200, "minimum": 10, "maximum": 2000},
-                },
-                "required": ["run_id"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_recent_changes",
-            "description": (
-                "Get code/config changes for a pipeline within the last N hours (relative to its latest run). "
-                "A recent meaningful change shortly before the failure is a strong bad_deploy signal."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "pipeline": {"type": "string"},
-                    "since_hours": {"type": "integer", "default": 48, "minimum": 1, "maximum": 2160},
-                },
-                "required": ["pipeline"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_table_schema",
-            "description": (
-                "Get the current schema of a table (version + change description). "
-                "A version bump with a change description indicates upstream schema drift."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "table": {"type": "string", "description": "Fully qualified name, e.g. raw.orders"},
-                },
-                "required": ["table"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_run_history",
-            "description": (
-                "Get recent run outcomes (success/failed) for a pipeline. Repeated earlier failures point to a "
-                "persistent cause; a long healthy streak broken right after a change points to bad_deploy."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "pipeline": {"type": "string"},
-                    "last_n": {"type": "integer", "default": 10, "minimum": 1, "maximum": 100},
-                },
-                "required": ["pipeline"],
-            },
-        },
-    },
-]
-
-
-class ToolCallBudgetExceeded(Exception):
-    pass
+BUDGET_EXHAUSTED_MSG = (
+    "ERROR: tool-call budget of {budget} calls for this incident is exhausted; this call was not executed. "
+    "Do not call any more tools. Respond now with ONLY the JSON diagnosis based on the evidence you already have."
+)
+REPAIR_INSTRUCTIONS = (
+    "Tools are no longer available; do not try to call them. Reply with ONLY the JSON diagnosis object, "
+    "with exactly these keys: run_id, root_cause, confidence, evidence, proposed_next_step, "
+    "requires_human_approval. Each evidence item needs a source (run_logs, table_schema, recent_changes or "
+    "run_history) and a quote of at least 4 characters copied verbatim from that tool's output. "
+    "An empty tool result such as [] is not evidence; leave it out."
+)
 
 
 @dataclass
@@ -122,14 +53,15 @@ class Trace:
     turns: int = 0
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     tool_call_count: int = 0
+    budget_exhausted: bool = False
+    repairs: int = 0
+    rejections: list[str] = field(default_factory=list)  # why each final answer was rejected
     prompt_tokens: int = 0
     completion_tokens: int = 0
     wall_time_s: float = 0.0
-    fallback_reason: str | None = None
+    fallback_reason: str | None = None  # tool_budget_exceeded | invalid_output | max_turns_exceeded
 
     def as_dict(self) -> dict[str, Any]:
-        from dataclasses import asdict
-
         return asdict(self)
 
 
@@ -138,49 +70,51 @@ def _norm(s: str) -> str:
 
 
 class TriageAgent:
-    def __init__(self, env: Environment, llm: MistralLLM, max_tool_calls: int = MAX_TOOL_CALLS):
-        self.env = env
+    def __init__(self, llm: LLMClient, tools: MCPToolClient, max_tool_calls: int = MAX_TOOL_CALLS):
         self.llm = llm
+        self.tools = tools
         self.max_tool_calls = max_tool_calls
         self.last_trace: Trace | None = None
 
     # ---------- main loop ----------
 
-    def diagnose(self, run_id: str) -> Diagnosis:
-        run = self.env.get_run(run_id)
-        if run is None:
-            raise ToolError(f"Run '{run_id}' not found.")
-
+    def diagnose(self, incident: Incident) -> Diagnosis:
         t0 = time.perf_counter()
-        trace = Trace(run_id=run_id)
-        tool_outputs: list[str] = []  # every tool result this incident has seen
+        trace = Trace(run_id=incident.run_id)
+        self.last_trace = trace
+        outputs: dict[str, list[str]] = defaultdict(list)  # tool name -> successful outputs this incident
+        specs = self.tools.function_specs()
 
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
                 "role": "user",
                 "content": USER_TEMPLATE.format(
-                    run_id=run_id,
-                    pipeline=run.pipeline,
-                    failed_task=run.failed_task,
-                    started_at=run.started_at.isoformat(),
+                    run_id=incident.run_id,
+                    pipeline=incident.pipeline,
+                    failed_task=incident.failed_task,
+                    started_at=incident.started_at.isoformat(),
                 ),
             },
         ]
 
-        tool_calls_used = 0
-        repairs_used = 0
-        force_json = False  # set after an invalid answer; repair turns get no tools + json mode
+        tools_allowed = True  # False after the budget runs out or an invalid answer: answer-only turns
         diagnosis: Diagnosis | None = None
+        reason: str | None = None
 
         for _turn in range(MAX_TURNS):
-            resp = self.llm.chat(messages, tools=None if force_json else TOOL_SPECS, json_mode=force_json)
+            resp = self.llm.chat(
+                messages,
+                tools=specs,
+                json_mode=not tools_allowed,
+                tool_choice="auto" if tools_allowed else "none",
+            )
             trace.turns += 1
             trace.prompt_tokens += resp.prompt_tokens
             trace.completion_tokens += resp.completion_tokens
 
-            # --- tool-calling path (skipped on repair turns) ---
-            if resp.tool_calls and not force_json:
+            # --- tool-calling path ---
+            if resp.tool_calls and tools_allowed:
                 messages.append(
                     {
                         "role": "assistant",
@@ -195,88 +129,75 @@ class TriageAgent:
                         ],
                     }
                 )
+                # every tool call must get a tool message, even the ones we refuse to run
                 for tc in resp.tool_calls:
-                    tool_calls_used += 1
-                    trace.tool_call_count += 1
-                    if tool_calls_used > self.max_tool_calls:
-                        trace.fallback_reason = "tool_budget_exceeded"
-                        self.last_trace = trace
-                        trace.wall_time_s = round(time.perf_counter() - t0, 2)
-                        raise ToolCallBudgetExceeded(
-                            f"Exceeded tool call budget ({self.max_tool_calls}) for {run_id}"
+                    if trace.tool_call_count >= self.max_tool_calls:
+                        trace.budget_exhausted = True
+                        content = BUDGET_EXHAUSTED_MSG.format(budget=self.max_tool_calls)
+                        trace.tool_calls.append({"name": tc.name, "arguments": tc.arguments, "skipped": True})
+                    else:
+                        trace.tool_call_count += 1
+                        result = self.tools.call(tc.name, tc.arguments)
+                        content = result.text
+                        if not result.is_error:
+                            outputs[tc.name].append(result.text)
+                        trace.tool_calls.append(
+                            {
+                                "name": tc.name,
+                                "arguments": tc.arguments,
+                                "result_chars": len(result.text),
+                                "is_error": result.is_error,
+                            }
                         )
-                    result = self._call_tool(tc.name, tc.arguments)
-                    tool_outputs.append(result)
-                    trace.tool_calls.append(
-                        {
-                            "name": tc.name,
-                            "arguments": tc.arguments,
-                            "result_chars": len(result),
-                            "is_error": result.startswith("ERROR:"),
-                        }
-                    )
-                    messages.append(
-                        {"role": "tool", "tool_call_id": tc.id, "name": tc.name, "content": result}
-                    )
+                    messages.append({"role": "tool", "tool_call_id": tc.id, "name": tc.name, "content": content})
+                if trace.budget_exhausted:
+                    tools_allowed = False
                 continue
 
             # --- final-answer path ---
-            candidate, error = self._parse_diagnosis(resp.content or "", run_id)
+            candidate, error = self._parse_diagnosis(resp.content or "", incident.run_id)
             if candidate is not None:
-                bad_quotes = self._check_evidence(candidate, tool_outputs)
+                bad_quotes = self._check_evidence(candidate, outputs)
                 if not bad_quotes:
                     diagnosis = candidate
                     break
-                error = f"evidence quotes not found verbatim in tool outputs: {bad_quotes}"
+                error = f"evidence quotes not found verbatim in the named tool's output: {bad_quotes}"
+            trace.rejections.append(str(error))
 
-            # --- repair: correct the model and retry with stricter output mode ---
-            repairs_used += 1
-            if repairs_used > MAX_REPAIR_ATTEMPTS:
+            # --- repair: correct the model and retry in answer-only mode ---
+            if trace.repairs >= MAX_REPAIR_ATTEMPTS:
+                reason = "tool_budget_exceeded" if trace.budget_exhausted else "invalid_output"
                 break
+            trace.repairs += 1
             messages.append({"role": "assistant", "content": resp.content or ""})
             messages.append(
                 {
                     "role": "user",
                     "content": (
-                        f"Your previous answer was invalid: {error}. "
-                        "Respond again with ONLY the JSON diagnosis object. Copy evidence quotes "
-                        "verbatim from tool outputs you received earlier."
+                        f"Your previous answer was rejected: {error}\n\n" + REPAIR_INSTRUCTIONS
                     ),
                 }
             )
-            force_json = True
-
-        trace.wall_time_s = round(time.perf_counter() - t0, 2)
-        self.last_trace = trace
+            tools_allowed = False
+        else:
+            reason = "max_turns_exceeded"
 
         if diagnosis is None:
-            diagnosis = self._fallback_diagnosis(run_id, tool_outputs)
-            trace.fallback_reason = trace.fallback_reason or "invalid_output"
-
+            trace.fallback_reason = reason or "invalid_output"
+            diagnosis = self._fallback_diagnosis(incident.run_id, outputs)
+        trace.wall_time_s = round(time.perf_counter() - t0, 2)
         return diagnosis
 
     # ---------- helpers ----------
 
-    def _call_tool(self, name: str, arguments: dict[str, Any]) -> str:
-        impl = TOOL_IMPLS.get(name)
-        if impl is None:
-            return f"ERROR: unknown tool '{name}'. Available: {sorted(TOOL_IMPLS)}"
-        try:
-            out = impl(self.env, **arguments)
-            return out if isinstance(out, str) else json.dumps(out)
-        except ToolError as e:
-            return f"ERROR: {e}"
-        except TypeError as e:
-            return f"ERROR: invalid arguments for {name}: {e}"
-
     @staticmethod
-    def _check_evidence(d: Diagnosis, tool_outputs: list[str]) -> list[str]:
-        """Return evidence quotes that do NOT appear in any tool output (verbatim)."""
-        haystack = _norm(" ===== ".join(tool_outputs))
+    def _check_evidence(d: Diagnosis, outputs: dict[str, list[str]]) -> list[str]:
+        """Quotes that do NOT appear verbatim in any successful output of the tool their `source` names."""
         bad: list[str] = []
         for ev in d.evidence:
+            haystack = _norm("\n".join(outputs.get(SOURCE_TOOL[ev.source], [])))
             if _norm(ev.quote) not in haystack:
-                bad.append(ev.quote[:80])
+                bad.append(f"[{ev.source}] {ev.quote[:80]}")
         return bad
 
     @staticmethod
@@ -290,28 +211,30 @@ class TriageAgent:
             return None, f"invalid JSON: {e}"
         if not isinstance(data, dict):
             return None, "output is not a JSON object"
-        data.setdefault("run_id", run_id)
+        data["run_id"] = run_id  # the incident id is not the model's to change
         try:
             return Diagnosis.model_validate(data), None
         except Exception as e:  # pydantic ValidationError
             return None, str(e)[:300]
 
     @staticmethod
-    def _fallback_diagnosis(run_id: str, tool_outputs: list[str]) -> Diagnosis:
+    def _fallback_diagnosis(run_id: str, outputs: dict[str, list[str]]) -> Diagnosis:
+        """`unknown`, citing the last ERROR line of the logs verbatim when the agent fetched them."""
+        evidence: list[EvidenceItem] = []
+        log_lines = [ln for out in outputs.get("get_run_logs", []) for ln in out.splitlines() if ln.strip()]
+        errors = [ln for ln in log_lines if " ERROR " in ln]
+        if errors or log_lines:
+            evidence.append(
+                EvidenceItem(
+                    source="run_logs",
+                    quote=(errors or log_lines)[-1],
+                    note="Agent could not validate a diagnosis; fallback to unknown (advisory only)",
+                )
+            )
         return Diagnosis(
             run_id=run_id,
             root_cause="unknown",
             confidence=0.0,
-            evidence=[
-                EvidenceItem(
-                    source="run_logs",
-                    quote=(tool_outputs[0][:200] + ("..." if len(tool_outputs[0]) > 200 else ""))
-                    if tool_outputs
-                    else "No tool outputs were obtained",
-                    note="Agent could not validate its diagnosis; fallback to unknown (advisory only)",
-                )
-            ],
-            proposed_next_step=(
-                "The agent failed to produce a validated diagnosis; triage this run manually."
-            ),
+            evidence=evidence,
+            proposed_next_step="The agent failed to produce a validated diagnosis; triage this run manually.",
         )

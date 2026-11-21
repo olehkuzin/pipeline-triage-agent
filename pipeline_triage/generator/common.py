@@ -47,16 +47,29 @@ BASE_SCHEMA_BY_SOURCE = {
 
 ENGINEERS = ["akira", "mchen", "jsilva", "dpetrov", "lfontaine", "twong"]
 
+# (level, logger, message): irrelevant lines sprinkled into every failing task.
 NOISE_LINES = [
-    "WARN  Retrying HTTP request to metadata service (attempt 1/3)",
-    "INFO  Graph visualization too large; 12 nodes omitted",
-    "WARN  DeprecationWarning: 'datetime.utcnow' is deprecated, use 'datetime.now'",
-    "INFO  Task instance heartbeat recorded",
-    "WARN  Scheduler heartbeat took 2.3s (threshold 2.0s)",
-    "INFO  Using execution timezone: UTC",
-    "DEBUG connection pool size: 10",
-    "INFO  Skipping SLA check: no SLA configured for task",
+    ("WARN", "lib.http", "Retrying HTTP request to metadata service (attempt 1/3)"),
+    ("INFO", "airflow.task", "Graph visualization too large; 12 nodes omitted"),
+    ("WARN", "py.warnings", "DeprecationWarning: 'datetime.utcnow' is deprecated, use 'datetime.now'"),
+    ("INFO", "airflow.task", "Task instance heartbeat recorded"),
+    ("WARN", "airflow.scheduler", "Scheduler heartbeat took 2.3s (threshold 2.0s)"),
+    ("INFO", "airflow.task", "Using execution timezone: UTC"),
+    ("DEBUG", "lib.dbio", "connection pool size: 10"),
+    ("INFO", "airflow.task", "Skipping SLA check: no SLA configured for task"),
 ]
+
+# Benign lines that happen to contain another failure category's vocabulary, as
+# real logs do. A careful reader sees they are harmless; a keyword matcher does
+# not. Injected into a minority of runs, never as the actual cause.
+RED_HERRING_LINES = [
+    ("WARN", "lib.metrics", "Optional metrics push to https://metrics.internal/v1 returned 403; continuing without metrics"),
+    ("INFO", "lib.cache", "Partition not found in local cache, fetching from object store"),
+    ("INFO", "lib.http", "Request to schema registry succeeded after retry (2nd attempt)"),
+    ("WARN", "lib.spark", "Memory pressure: executor 3 heap usage at 81%, spilling to disk"),
+    ("WARN", "dq_engine", "Soft check 'row_count_drift' warned (non-blocking): 3.1% below 7-day average"),
+]
+RED_HERRING_RATE = 0.35
 
 STACK_TRACES = {
     "python": [
@@ -84,26 +97,29 @@ def rand_hex(rng: random.Random, n: int = 40) -> str:
 
 
 def make_task_name(rng: random.Random, source: str, target: str | None = None) -> str:
-    t = rng.choice(TASK_TEMPLATES)
-    t = t.replace("{source}", source).replace("{target}", target or rng.choice(TARGETS))
-    head, *rest = t.split("_", 1)
-    return head + ("_" + rest[0] if rest else "")
+    template = rng.choice(TASK_TEMPLATES)
+    return template.replace("{source}", source).replace("{target}", target or rng.choice(TARGETS))
 
 
 def airflow_log_line(ts: datetime, level: str, logger: str, msg: str) -> str:
-    """Format an Airflow-style log line.
+    """Format an Airflow-style log line: [ts] LEVEL [logger] message."""
+    return f"[{ts.isoformat(timespec='seconds')}] {level:<5} [{logger}] {msg}"
 
-    The timestamps inside the message body are what the agent will actually
-    read, so we keep the format realistic: [ts] LEVEL [logger] message.
+
+def log_line_ts(line: str) -> datetime:
+    """Timestamp of a line produced by `airflow_log_line`."""
+    return datetime.fromisoformat(line[1 : line.index("]")])
+
+
+def add_noise(rng: random.Random, lines: list[str], n: int, red_herring: bool = False) -> None:
+    """Insert irrelevant lines in-place, after the first line, keeping timestamps in order.
+
+    Each inserted line takes the timestamp of the line it follows, so the log
+    stays chronological.
     """
-    return f"[{ts.isoformat()}] {level:<5} [{logger}] {msg}"
-
-
-def add_noise(rng: random.Random, lines: list[str], n: int, start: datetime) -> None:
-    """Sprinkle irrelevant log lines in-place around the existing ones."""
-    for _ in range(n):
-        msg = rng.choice(NOISE_LINES)
-        level = msg.split()[0]
-        logger = rng.choice(["airflow.task", "airflow.scheduler", "lib.dbio", "lib.s3io"])
-        pos = rng.randint(0, len(lines))
-        lines.insert(pos, airflow_log_line(start, level, logger, msg))
+    picks = [rng.choice(NOISE_LINES) for _ in range(n)]
+    if red_herring:
+        picks.append(rng.choice(RED_HERRING_LINES))
+    for level, logger, msg in picks:
+        pos = rng.randint(1, len(lines))
+        lines.insert(pos, airflow_log_line(log_line_ts(lines[pos - 1]), level, logger, msg))

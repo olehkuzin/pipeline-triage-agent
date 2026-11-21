@@ -1,4 +1,4 @@
-"""Diagnose failed runs with the LLM agent.
+"""Diagnose failed runs with the LLM agent, using tools through the MCP server over stdio.
 
 Usage:
   MISTRAL_API_KEY=... python -m agent.run --run-id run_00042 [--model mistral-large-latest]
@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
+import sys
+from pathlib import Path
 
 from pipeline_triage.env import Environment
-from pipeline_triage.mcp_server import ToolError
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -27,33 +29,33 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dump-trace", action="store_true", help="Print the tool-call trace to stderr.")
     args = parser.parse_args(argv)
 
-    if args.dataset:
-        env = Environment.load(args.dataset)
-    else:
-        env = Environment.generate(n=args.n, seed=args.seed)
-
-    from .llm import MistralLLM
-    from .loop import TriageAgent
-
-    llm = MistralLLM(model=args.model)
-    agent = TriageAgent(env, llm)
+    if args.dataset and not Path(args.dataset).exists():
+        parser.error(f"dataset not found: {args.dataset}")
+    env = Environment.load(args.dataset) if args.dataset else Environment.generate(n=args.n, seed=args.seed)
 
     run_ids = list(args.run_id or [])
     if args.sample:
-        import random
-
         run_ids += random.Random(7).sample([r.run_id for r in env.all_runs()], args.sample)
     if not run_ids:
         parser.error("provide --run-id and/or --sample")
+    unknown = [rid for rid in run_ids if env.get_run(rid) is None]
+    if unknown:
+        parser.error(f"run id(s) not in the dataset: {', '.join(unknown)}")
 
-    for rid in run_ids:
-        diagnosis = agent.diagnose(rid)
-        print(json.dumps(diagnosis.model_dump(), indent=2))
-        tr = agent.last_trace
-        if tr and args.dump_trace:
-            import sys
+    from .llm import MistralLLM
+    from .loop import TriageAgent
+    from .schemas import Incident
+    from .tools import MCPToolClient
 
-            print(json.dumps(tr.as_dict(), indent=2), file=sys.stderr)
+    llm = MistralLLM(model=args.model)
+    # the server process builds the same seeded dataset (or loads the same file)
+    with MCPToolClient.stdio(dataset=args.dataset, n=args.n, seed=args.seed) as tools:
+        agent = TriageAgent(llm, tools)
+        for rid in run_ids:
+            diagnosis = agent.diagnose(Incident.from_run(env.get_run(rid)))
+            print(json.dumps(diagnosis.model_dump(mode="json"), indent=2))
+            if args.dump_trace and agent.last_trace:
+                print(json.dumps(agent.last_trace.as_dict(), indent=2), file=sys.stderr)
     return 0
 
 

@@ -3,8 +3,9 @@
 Scores a predictor (run_id -> {"root_cause": str, "confidence": float, ...})
 against ground truth:
 accuracy, macro-F1, per-class precision/recall, confusion matrix, and
-confidence calibration (is high confidence correlated with correctness?).
-Ambiguous cases accept any of `accepted_causes`.
+confidence calibration (is high confidence correlated with correctness?), plus
+operational means (tool calls, tokens, latency, fallback rate) when the
+predictor reports them. Ambiguous cases accept any of `accepted_causes`.
 """
 
 from __future__ import annotations
@@ -18,6 +19,9 @@ from ..env import Environment
 
 Predictor = Callable[[Environment, str], dict[str, Any]]
 
+# numeric fields a predictor may report per run; averaged into `operational`
+OPERATIONAL_FIELDS = ("tool_calls", "prompt_tokens", "completion_tokens", "wall_time_s")
+
 
 @dataclass
 class EvalResult:
@@ -28,6 +32,8 @@ class EvalResult:
     confusion: dict[str, dict[str, int]]  # rows = truth, cols = predicted
     calibration: dict[str, float] = field(default_factory=dict)  # bucket -> accuracy
     ambiguous_resolved: int = 0  # ambiguous cases where an alternate accepted cause was predicted
+    operational: dict[str, float] = field(default_factory=dict)  # mean per run, when reported
+    predictions: list[dict[str, Any]] = field(default_factory=list)  # one row per run, for error analysis
 
     def summary(self) -> str:
         lines = [
@@ -49,6 +55,11 @@ class EvalResult:
             lines.append("calibration (confidence bucket -> accuracy):")
             for bucket, acc in sorted(self.calibration.items()):
                 lines.append(f"  {bucket:<6} {acc:.2f}")
+        if self.operational:
+            lines.append("")
+            lines.append("operational (mean per run):")
+            for name, value in self.operational.items():
+                lines.append(f"  {name:<18} {value:.3f}")
         return "\n".join(lines)
 
     def to_dict(self) -> dict:
@@ -74,8 +85,9 @@ def _bucket(conf: float) -> str:
     return "<0.4"
 
 
-def evaluate(env: Environment, predictor: Predictor) -> EvalResult:
-    runs = env.all_runs()
+def evaluate(env: Environment, predictor: Predictor, run_ids: list[str] | None = None) -> EvalResult:
+    """Score `predictor` on every run, or only on `run_ids` when given."""
+    runs = env.all_runs() if run_ids is None else [r for rid in run_ids if (r := env.get_run(rid)) is not None]
     classes = sorted({r.root_cause.value for r in runs})
 
     tp: dict[str, int] = defaultdict(int)
@@ -87,6 +99,8 @@ def evaluate(env: Environment, predictor: Predictor) -> EvalResult:
 
     correct = 0
     ambiguous_resolved = 0
+    predictions: list[dict[str, Any]] = []
+    op_values: dict[str, list[float]] = defaultdict(list)
 
     for run in runs:
         pred_map = predictor(env, run.run_id)
@@ -111,6 +125,23 @@ def evaluate(env: Environment, predictor: Predictor) -> EvalResult:
         if is_correct:
             cal_correct[_bucket(conf)] += 1
 
+        row: dict[str, Any] = {
+            "run_id": run.run_id,
+            "truth": truth,
+            "accepted": sorted(accepted),
+            "pred": pred,
+            "confidence": conf,
+            "correct": is_correct,
+        }
+        for name in OPERATIONAL_FIELDS:
+            if name in pred_map:
+                row[name] = pred_map[name]
+                op_values[name].append(float(pred_map[name]))
+        if "fallback" in pred_map:
+            row["fallback"] = bool(pred_map["fallback"])
+            op_values["fallback_rate"].append(1.0 if row["fallback"] else 0.0)
+        predictions.append(row)
+
     per_class: dict[str, dict[str, float]] = {}
     f1s: list[float] = []
     for cls in classes:
@@ -132,4 +163,6 @@ def evaluate(env: Environment, predictor: Predictor) -> EvalResult:
         confusion={t: dict(row) for t, row in confusion.items()},
         calibration=calibration,
         ambiguous_resolved=ambiguous_resolved,
+        operational={name: sum(vals) / len(vals) for name, vals in op_values.items() if vals},
+        predictions=predictions,
     )

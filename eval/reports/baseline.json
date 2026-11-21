@@ -1,12 +1,12 @@
 {
   "n": 120,
-  "accuracy": 0.9,
-  "macro_f1": 0.8774509803921569,
+  "accuracy": 0.875,
+  "macro_f1": 0.8712266195961847,
   "per_class": {
     "bad_deploy": {
-      "precision": 0.6666666666666666,
-      "recall": 0.15384615384615385,
-      "f1": 0.25,
+      "precision": 1.0,
+      "recall": 0.7692307692307693,
+      "f1": 0.8695652173913044,
       "support": 13
     },
     "data_quality_violation": {
@@ -16,15 +16,15 @@
       "support": 13
     },
     "late_or_missing_data": {
-      "precision": 1.0,
+      "precision": 0.6666666666666666,
       "recall": 1.0,
-      "f1": 1.0,
+      "f1": 0.8,
       "support": 14
     },
     "permission_or_auth": {
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0,
+      "precision": 0.7222222222222222,
+      "recall": 0.9285714285714286,
+      "f1": 0.8125000000000001,
       "support": 14
     },
     "resource_exhaustion": {
@@ -35,20 +35,20 @@
     },
     "schema_drift": {
       "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0,
+      "recall": 0.8571428571428571,
+      "f1": 0.923076923076923,
       "support": 14
     },
     "transient_infra": {
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0,
+      "precision": 0.7692307692307693,
+      "recall": 0.7692307692307693,
+      "f1": 0.7692307692307693,
       "support": 13
     },
     "unknown": {
-      "precision": 0.5,
-      "recall": 0.9166666666666666,
-      "f1": 0.6470588235294118,
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6666666666666666,
       "support": 12
     },
     "upstream_dependency_failure": {
@@ -60,8 +60,11 @@
   },
   "confusion": {
     "bad_deploy": {
-      "unknown": 11,
-      "bad_deploy": 2
+      "bad_deploy": 7,
+      "schema_drift": 3,
+      "transient_infra": 1,
+      "permission_or_auth": 1,
+      "late_or_missing_data": 1
     },
     "data_quality_violation": {
       "data_quality_violation": 13
@@ -70,30 +73,1256 @@
       "late_or_missing_data": 14
     },
     "permission_or_auth": {
-      "permission_or_auth": 14
+      "permission_or_auth": 13,
+      "late_or_missing_data": 1
     },
     "resource_exhaustion": {
       "resource_exhaustion": 14
     },
     "schema_drift": {
-      "schema_drift": 14
+      "schema_drift": 12,
+      "permission_or_auth": 2
     },
     "transient_infra": {
-      "transient_infra": 13
+      "transient_infra": 10,
+      "late_or_missing_data": 2,
+      "permission_or_auth": 1
     },
     "unknown": {
-      "unknown": 11,
-      "bad_deploy": 1
+      "transient_infra": 2,
+      "permission_or_auth": 1,
+      "unknown": 6,
+      "late_or_missing_data": 3
     },
     "upstream_dependency_failure": {
       "upstream_dependency_failure": 13
     }
   },
   "calibration": {
-    "0.8+": 1.0,
-    "0.6-0.8": 0.9411764705882353,
-    "0.4-0.6": 1.0,
-    "<0.4": 0.0
+    "0.8+": 0.8369565217391305,
+    "0.6-0.8": 1.0,
+    "0.4-0.6": 1.0
   },
-  "ambiguous_resolved": 0
+  "ambiguous_resolved": 3,
+  "operational": {},
+  "predictions": [
+    {
+      "run_id": "run_00104",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "bad_deploy",
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "run_id": "run_00151",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": false
+    },
+    {
+      "run_id": "run_00073",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00052",
+      "truth": "schema_drift",
+      "accepted": [
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00102",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00059",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00119",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00139",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "run_id": "run_00090",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00147",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00044",
+      "truth": "schema_drift",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00064",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00061",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00158",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00082",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00135",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00138",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "run_id": "run_00075",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00105",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": false
+    },
+    {
+      "run_id": "run_00069",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00093",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00050",
+      "truth": "schema_drift",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00143",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "run_id": "run_00117",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00129",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00152",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "unknown",
+      "confidence": 0.4,
+      "correct": true
+    },
+    {
+      "run_id": "run_00092",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00155",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "unknown",
+      "confidence": 0.4,
+      "correct": true
+    },
+    {
+      "run_id": "run_00110",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00074",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00049",
+      "truth": "schema_drift",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00079",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00103",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "bad_deploy",
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "run_id": "run_00142",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "run_id": "run_00150",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "run_id": "run_00157",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "unknown",
+      "confidence": 0.4,
+      "correct": true
+    },
+    {
+      "run_id": "run_00099",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00045",
+      "truth": "schema_drift",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00098",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00159",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": false
+    },
+    {
+      "run_id": "run_00106",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00057",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00109",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "bad_deploy",
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "run_id": "run_00095",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00108",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "bad_deploy",
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "run_id": "run_00149",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "run_id": "run_00153",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00094",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00125",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00161",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00077",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00122",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00083",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00081",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00047",
+      "truth": "schema_drift",
+      "accepted": [
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00084",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00137",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00131",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00060",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00085",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00136",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00065",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00066",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00144",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00130",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00127",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00145",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "run_id": "run_00124",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00133",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00115",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00123",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00121",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00162",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "unknown",
+      "confidence": 0.4,
+      "correct": true
+    },
+    {
+      "run_id": "run_00128",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00051",
+      "truth": "schema_drift",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00067",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00116",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00089",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00080",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00113",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00053",
+      "truth": "schema_drift",
+      "accepted": [
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00156",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00058",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00111",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "bad_deploy",
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "run_id": "run_00101",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "bad_deploy",
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "run_id": "run_00048",
+      "truth": "schema_drift",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00076",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00160",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "unknown",
+      "confidence": 0.4,
+      "correct": true
+    },
+    {
+      "run_id": "run_00087",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00088",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00055",
+      "truth": "schema_drift",
+      "accepted": [
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00091",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00054",
+      "truth": "schema_drift",
+      "accepted": [
+        "schema_drift"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00056",
+      "truth": "schema_drift",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00141",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "run_id": "run_00070",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00062",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00148",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "run_id": "run_00086",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00097",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00154",
+      "truth": "unknown",
+      "accepted": [
+        "unknown"
+      ],
+      "pred": "unknown",
+      "confidence": 0.4,
+      "correct": true
+    },
+    {
+      "run_id": "run_00063",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00140",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra"
+      ],
+      "pred": "transient_infra",
+      "confidence": 0.8,
+      "correct": true
+    },
+    {
+      "run_id": "run_00043",
+      "truth": "schema_drift",
+      "accepted": [
+        "schema_drift"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00146",
+      "truth": "transient_infra",
+      "accepted": [
+        "transient_infra"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": false
+    },
+    {
+      "run_id": "run_00078",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00118",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00100",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy",
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00071",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00096",
+      "truth": "permission_or_auth",
+      "accepted": [
+        "permission_or_auth"
+      ],
+      "pred": "permission_or_auth",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00112",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00132",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "transient_infra",
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00126",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00134",
+      "truth": "upstream_dependency_failure",
+      "accepted": [
+        "upstream_dependency_failure"
+      ],
+      "pred": "upstream_dependency_failure",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00068",
+      "truth": "late_or_missing_data",
+      "accepted": [
+        "late_or_missing_data"
+      ],
+      "pred": "late_or_missing_data",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00114",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00046",
+      "truth": "schema_drift",
+      "accepted": [
+        "schema_drift"
+      ],
+      "pred": "schema_drift",
+      "confidence": 0.7,
+      "correct": true
+    },
+    {
+      "run_id": "run_00120",
+      "truth": "data_quality_violation",
+      "accepted": [
+        "data_quality_violation"
+      ],
+      "pred": "data_quality_violation",
+      "confidence": 0.85,
+      "correct": true
+    },
+    {
+      "run_id": "run_00107",
+      "truth": "bad_deploy",
+      "accepted": [
+        "bad_deploy"
+      ],
+      "pred": "bad_deploy",
+      "confidence": 0.75,
+      "correct": true
+    },
+    {
+      "run_id": "run_00072",
+      "truth": "resource_exhaustion",
+      "accepted": [
+        "resource_exhaustion"
+      ],
+      "pred": "resource_exhaustion",
+      "confidence": 0.85,
+      "correct": true
+    }
+  ]
 }

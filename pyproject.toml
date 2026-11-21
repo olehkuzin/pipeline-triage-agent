@@ -8,8 +8,19 @@ dependencies = ["mcp>=2.3,<3", "pydantic>=2", "mistralai>=3.8,<4"]
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
+[project.scripts]
+triage-mcp = "pipeline_triage.mcp_server_main:main"
+triage-agent = "agent.run:main"
+triage-eval = "pipeline_triage.eval.run_eval:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# make `pipeline_triage` and `agent` importable when running plain `pytest`
+pythonpath = ["."]
 
 [tool.setuptools.packages.find]
-include = ["pipeline_triage*"]
+include = ["pipeline_triage*", "agent*"]
